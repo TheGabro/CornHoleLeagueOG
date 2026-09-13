@@ -12,3 +12,13 @@ Fase 2 — Season, Tournament, Match, MatchPlayer (vedi docs/plan.md).
 """
 
 from django.db import models
+from django.contrib.auth.models import AbstractUser
+
+class User(AbstractUser):
+    
+    nickname = models.CharField(max_length=30, blank=True)
+    membership_number = models.CharField(max_length=30, blank=True)
+    
+
+    def __str__(self):
+        return self.nickname if self.nickname else self.username
