@@ -14,11 +14,110 @@ Fase 2 — Season, Tournament, Match, MatchPlayer (vedi docs/plan.md).
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
+from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
+from django.db.models.constraints import UniqueConstraint
+
+
 class User(AbstractUser):
-    
     nickname = models.CharField(max_length=30, blank=True)
     membership_number = models.CharField(max_length=30, blank=True)
-    
 
     def __str__(self):
         return self.nickname if self.nickname else self.username
+
+
+class Season(models.Model):
+    name = models.CharField(max_length=100)
+    start_date = models.DateField()
+    end_date = models.DateField()
+    is_active = models.BooleanField(default=True)
+
+    def clean(self):
+        if self.start_date and self.end_date:
+            if self.start_date >= self.end_date:
+                raise ValidationError(
+                    "La data di inizio deve essere precedente alla data di fine."
+                )
+
+    def __str__(self):
+        return self.name
+
+
+class Tournament(models.Model):
+    class Kind(models.TextChoices):
+        SINGLES = "SINGLES", "Singolo"
+        DOUBLES = "DOUBLES", "Doppio"
+
+    name = models.CharField(max_length=100)
+    season = models.ForeignKey(
+        Season, on_delete=models.CASCADE, related_name="tournaments"
+    )
+    kind = models.CharField(max_length=10, choices=Kind.choices)
+    points_per_win = models.PositiveSmallIntegerField(default=3)
+    points_per_loss = models.PositiveSmallIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.season} · {self.name} ({self.get_kind_display()})"
+
+    class Meta:
+        ordering = ["season", "name"]
+
+
+class Match(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "In attesa"
+        CONFIRMED = "CONFIRMED", "Confermato"
+        REJECTED = "REJECTED", "Rifiutato"
+
+    tournament = models.ForeignKey(
+        Tournament, on_delete=models.CASCADE, related_name="matches"
+    )
+    played_at = models.DateTimeField()
+    score_red = models.PositiveSmallIntegerField(validators=[MinValueValidator(0)])
+    score_blue = models.PositiveSmallIntegerField(validators=[MinValueValidator(0)])
+    rounds = models.PositiveSmallIntegerField(validators=[MinValueValidator(1)])
+    status = models.CharField(
+        max_length=10, choices=Status.choices, default=Status.PENDING
+    )
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, related_name="matches_created"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    notes = models.TextField(blank=True)
+
+    def clean(self):
+        if self.score_red is not None and self.score_blue is not None:
+            if self.score_red == self.score_blue:
+                raise ValidationError(
+                    "I punteggi non possono essere uguali. Deve esserci un vincitore."
+                )
+
+    class Meta:
+        ordering = ["-played_at"]
+
+    def __str__(self):
+        return f"{self.tournament} - {self.played_at.strftime('%Y-%m-%d %H:%M')} - Red: {self.score_red} - Blue: {self.score_blue}"
+
+
+class MatchPlayer(models.Model):
+    class Side(models.TextChoices):
+        TEAM_RED = "Team Red"
+        TEAM_BLUE = "Team Blue"
+
+    match = models.ForeignKey(Match, on_delete=models.CASCADE, related_name="players")
+    player = models.ForeignKey(
+        User, on_delete=models.PROTECT, related_name="matches_participation"
+    )
+    side = models.CharField(choices=Side.choices, max_length=10)
+    confirmed = models.BooleanField(default=False)
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.player} - {self.match}"
+
+    class Meta:
+        constraints = [
+            UniqueConstraint(fields=["match", "player"], name="unique_match_player")
+        ]
