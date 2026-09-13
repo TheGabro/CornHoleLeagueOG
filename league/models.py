@@ -103,8 +103,8 @@ class Match(models.Model):
 
 class MatchPlayer(models.Model):
     class Side(models.TextChoices):
-        TEAM_RED = "Team Red"
-        TEAM_BLUE = "Team Blue"
+        TEAM_A = "Team A"
+        TEAM_B = "Team B"
 
     match = models.ForeignKey(Match, on_delete=models.CASCADE, related_name="players")
     player = models.ForeignKey(
