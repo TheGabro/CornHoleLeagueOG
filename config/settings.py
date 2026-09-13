@@ -82,13 +82,19 @@ WSGI_APPLICATION = "config.wsgi.application"
 # dj_database_url.config() legge la variabile e la traduce nel dizionario che Django si aspetta.
 # conn_max_age: riusa la connessione per 10 minuti invece di riaprirla a ogni richiesta (Neon è remoto).
 
-DATABASES = {
-    "default": dj_database_url.config(
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
-        conn_max_age=600,
-        conn_health_checks=True,
-    )
-}
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.parse(DATABASE_URL, conn_health_checks=True, conn_max_age=600)
+    }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # --- Utenti -----------------------------------------------------------------------------------
