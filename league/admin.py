@@ -88,8 +88,8 @@ class MatchAdmin(admin.ModelAdmin):
     list_display = (
         "tournament",
         "played_at",
-        "score_red",
-        "score_blue",
+        "score_a",
+        "score_b",
         "rounds",
         "status",
         "created_by",

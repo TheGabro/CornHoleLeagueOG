@@ -75,8 +75,8 @@ class Match(models.Model):
         Tournament, on_delete=models.CASCADE, related_name="matches"
     )
     played_at = models.DateTimeField()
-    score_red = models.PositiveSmallIntegerField(validators=[MinValueValidator(0)])
-    score_blue = models.PositiveSmallIntegerField(validators=[MinValueValidator(0)])
+    score_a = models.PositiveSmallIntegerField(validators=[MinValueValidator(0)])
+    score_b = models.PositiveSmallIntegerField(validators=[MinValueValidator(0)])
     rounds = models.PositiveSmallIntegerField(validators=[MinValueValidator(1)])
     status = models.CharField(
         max_length=10, choices=Status.choices, default=Status.PENDING
@@ -88,8 +88,8 @@ class Match(models.Model):
     notes = models.TextField(blank=True)
 
     def clean(self):
-        if self.score_red is not None and self.score_blue is not None:
-            if self.score_red == self.score_blue:
+        if self.score_a is not None and self.score_b is not None:
+            if self.score_a == self.score_b:
                 raise ValidationError(
                     "I punteggi non possono essere uguali. Deve esserci un vincitore."
                 )
@@ -98,7 +98,7 @@ class Match(models.Model):
         ordering = ["-played_at"]
 
     def __str__(self):
-        return f"{self.tournament} - {self.played_at.strftime('%Y-%m-%d %H:%M')} - Red: {self.score_red} - Blue: {self.score_blue}"
+        return f"{self.tournament} - {self.played_at.strftime('%Y-%m-%d %H:%M')} - A: {self.score_a} - B: {self.score_b}"
 
 
 class MatchPlayer(models.Model):
