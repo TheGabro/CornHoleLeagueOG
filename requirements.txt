@@ -1,0 +1,16 @@
+# Backend Django. Versioni fissate per avere build riproducibili (locale = Docker = VM).
+# Aggiornare con: pip install -U <pacchetto> && aggiornare la riga qui sotto.
+Django==6.1.1
+python-dotenv==1.2.3        # legge il file .env in sviluppo
+dj-database-url==3.1.2      # trasforma DATABASE_URL (Neon) nella config DATABASES di Django
+psycopg[binary]==3.3.5      # driver PostgreSQL (usato solo quando DATABASE_URL punta a Neon)
+
+# Fase 4 — API
+# djangorestframework==3.18.1
+
+# Fase 5 — Login Google
+# django-allauth[socialaccount]==65.19.3
+
+# Fase 8/9 — produzione
+# whitenoise
+# gunicorn
