@@ -51,7 +51,7 @@ CornHoleLeagueOG/            ← root del repo (aprire QUESTA in VS Code)
 ├─ frontend/                 ← Vite + React
 │  ├─ src/{api.js, main.jsx, App.jsx, pages/, components/}
 │  └─ dist/                  ← build, in .gitignore, servita da Django in prod
-├─ docs/                     ← questo piano + appunti per fase (come docs/plans del FantaF1)
+├─ claude/                   ← questo piano + appunti per fase (come docs/plans del FantaF1)
 ├─ Dockerfile  docker-compose.yml  Caddyfile
 └─ .claude/launch.json
 ```
@@ -101,12 +101,12 @@ Login: `/_allauth/browser/v1/auth/provider/redirect` (POST form → Google → c
 `/tournaments/:id` classifica + ultime partite · `/matches/new` form (torneo → giocatori per lato → punteggi) ·
 `/matches/:id` dettaglio con Conferma/Rifiuta · `/seasons/:id/combined` classifica ombra.
 
-## Fasi (ogni fase = una o più sessioni; chiude con commit + appunti in `docs/`)
+## Fasi (ogni fase = una o più sessioni; chiude con commit + appunti in `claude/`)
 
 Legenda: **[IO]** infrastruttura che scrivo e spiego · **[TU]** logica che scrivi tu con concetto + scheletro + revisione.
 
 ### Fase 0 — Igiene repo
-[IO] venv dentro il repo, `.gitignore`, `requirements.txt`, `.env.example`, `docs/` con questo piano. Branch `develop` come nel FantaF1.
+[IO] venv dentro il repo, `.gitignore`, `requirements.txt`, `.env.example`, `claude/` con questo piano. Branch `develop` come nel FantaF1.
 *Impari:* perché la venv sta nel repo ma non in git; flusso branch feature → develop → main.
 
 ### Fase 1 — Progetto Django + User custom + settings
@@ -172,7 +172,7 @@ Legenda: **[IO]** infrastruttura che scrivo e spiego · **[TU]** logica che scri
 - Per i passi **[TU]**: prima ti spiego il concetto e ti mostro un esempio *diverso* da quello che devi scrivere (non copiabile pari pari), poi scrivi tu, poi revisiono e ti chiedo di spiegare una scelta.
 - Per i passi **[IO]**: scrivo il file e lo commentiamo insieme; nessun file "magico" senza spiegazione.
 - Un branch `feature/<fase>` per fase, PR verso `develop`, merge; `main` solo per i deploy.
-- In `docs/` un file breve per fase con "cosa ho imparato / dubbi" scritto da te: serve a te per la prossima app.
+- In `claude/` un file breve per fase con "cosa ho imparato / dubbi" scritto da te: serve a te per la prossima app.
 
 ## Verifica end‑to‑end (a fine roadmap)
 

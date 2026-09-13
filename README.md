@@ -5,7 +5,7 @@ Web app per gestire il campionato annuale di cornhole dell'associazione: partite
 
 Stack: Django 6 + Django REST Framework · React (Vite) · PostgreSQL su Neon · login Google (django-allauth).
 
-Il piano di progetto e la roadmap sono in [docs/plan.md](docs/plan.md).
+Il piano di progetto e la roadmap sono in [claude/plan.md](claude/plan.md).
 
 ## Setup locale
 
