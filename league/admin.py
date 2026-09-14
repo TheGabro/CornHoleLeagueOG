@@ -19,45 +19,56 @@ class OGUserAdmin(UserAdmin):
     )
 
 
-class SeasonInline(admin.TabularInline):
-    model = Season
-    list_display = ("name", "start_date", "end_date")
-    search_fields = ("name",)
-
-
 class TournamentInline(admin.TabularInline):
     model = Tournament
-    list_display = ("name", "season", "kind", "points_per_win", "points_per_loss")
-    list_filter = ("season", "kind")
+    list_display = ("name", "season", "kind")
     search_fields = ("name",)
 
 
-class MatchInline(admin.TabularInline):
+class MatchSeasonInline(admin.TabularInline):
+    """Match di una Season: la maggior parte (sfide libere, tournament=None)."""
+
     model = Match
+    fk_name = "season"
     list_display = (
-        "tournament",
         "played_at",
-        "score_red",
-        "score_blue",
+        "tournament",
+        "score_a",
+        "score_b",
         "rounds",
         "status",
         "created_by",
         "created_at",
     )
-    list_filter = ("tournament__season", "tournament", "status")
-    search_fields = ("tournament__name",)
+    list_filter = ("status", "tournament")
+
+
+class MatchTournamentInline(admin.TabularInline):
+    """Match di un evento BRACKET."""
+
+    model = Match
+    fk_name = "tournament"
+    list_display = (
+        "played_at",
+        "score_a",
+        "score_b",
+        "rounds",
+        "status",
+        "created_by",
+        "created_at",
+    )
+    list_filter = ("status",)
 
 
 class MatchPlayerInline(admin.TabularInline):
     model = MatchPlayer
     list_display = ("match", "player", "side", "confirmed", "confirmed_at")
     list_filter = (
-        "match__tournament__season",
-        "match__tournament",
+        "match__season",
         "side",
         "confirmed",
     )
-    search_fields = ("match__tournament__name", "player__username", "player__nickname")
+    search_fields = ("match__season__name", "player__username", "player__nickname")
 
 
 @admin.register(Season)
@@ -65,27 +76,21 @@ class SeasonAdmin(admin.ModelAdmin):
     list_display = ("name", "start_date", "end_date", "is_active")
     list_filter = ("is_active",)
     search_fields = ("name",)
-    inlines = [TournamentInline]
+    inlines = [TournamentInline, MatchSeasonInline]
 
 
 @admin.register(Tournament)
 class TournamentAdmin(admin.ModelAdmin):
-    list_display = (
-        "name",
-        "season",
-        "kind",
-        "points_per_win",
-        "points_per_loss",
-        "is_active",
-    )
+    list_display = ("name", "season", "kind", "is_active")
     list_filter = ("season", "kind", "is_active")
     search_fields = ("name",)
-    inlines = [MatchInline]
+    inlines = [MatchTournamentInline]
 
 
 @admin.register(Match)
 class MatchAdmin(admin.ModelAdmin):
     list_display = (
+        "season",
         "tournament",
         "played_at",
         "score_a",
@@ -95,8 +100,8 @@ class MatchAdmin(admin.ModelAdmin):
         "created_by",
         "created_at",
     )
-    list_filter = ("tournament__season", "tournament", "status")
-    search_fields = ("tournament__name",)
+    list_filter = ("season", "tournament", "status")
+    search_fields = ("season__name",)
     inlines = [MatchPlayerInline]
 
 
@@ -104,9 +109,8 @@ class MatchAdmin(admin.ModelAdmin):
 class MatchPlayerAdmin(admin.ModelAdmin):
     list_display = ("match", "player", "side", "confirmed", "confirmed_at")
     list_filter = (
-        "match__tournament__season",
-        "match__tournament",
+        "match__season",
         "side",
         "confirmed",
     )
-    search_fields = ("match__tournament__name", "player__username", "player__nickname")
+    search_fields = ("match__season__name", "player__username", "player__nickname")
