@@ -80,6 +80,7 @@ Regole (in `Match.clean()` / serializer): giocatori per lato = 1 se SINGLES, 2 s
 
 - **Nome squadra scelto al momento della partita**: due campi opzionali `team_name_red` / `team_name_blue` su `Match` (nessun vincolo di schema: le coppie restano libere). Se col tempo le stesse coppie si ripetono, si può derivare o creare un'entità `Team` permanente a partire dallo storico. Da valutare dopo la Fase 7.
 - **Statistiche di fine stagione**: round totali giocati, partita più rapida (min `rounds`), più lunga, media round per torneo, ecc. Si calcolano da `Match.rounds` con aggregazioni (`Sum`/`Min`/`Avg`) in `services/`, stesso stile della classifica. Pagina React dedicata.
+- **Andamento round-per-round** (decisione 2026-09-14): oggi si salva solo il risultato finale (`score_a`/`score_b`/`rounds` = totali), niente storico "3-6 dopo il round 1, 6-9 dopo il round 2...". Per averlo serve un nuovo modello `Round` (FK a `Match`, numero round, punteggio del round) — cambia anche il form di inserimento partita (round-by-round invece che risultato finale a fine gara). Rimandato: non blocca ELO/PPR/DPR, che restano calcolabili da `score_a`/`score_b`/`rounds` così come sono.
 
 Perché `points_win/points_loss` sul torneo e niente colonna "punti" sulla partita: i punti sono **derivati**, si calcolano al volo dalla regola corrente → cambiare la regola non richiede migrazione dei dati. Se in futuro la regola diventa complessa (bonus scarto, ecc.) si estende `services/standings.py`.
 
@@ -88,6 +89,25 @@ Perché `points_win/points_loss` sul torneo e niente colonna "punti" sulla parti
 - `tournament_standings(tournament)` → per utente: played, won, lost, points_for, points_against, diff, **points**; solo partite CONFIRMED; ordinamento points ↓, diff ↓, won ↓, nickname.
 - `season_combined_standings(season)` → somma per utente delle righe dei tornei della stagione (il torneo "ombra").
 - Funzioni pure sopra i queryset, coperte da test unitari. È il pezzo di logica più importante ed è tuo.
+
+### Ranking ELO (decisione 2026-09-14, aggiunta a Fase 3)
+
+Oltre alla classifica per torneo sopra, **ranking ELO globale** per giocatore: skill nel tempo, non solo W/L
+del torneo corrente. Decisioni prese (AskUserQuestion):
+- **Rating unico combinato**: stesso numero aggiornato sia da match SINGLES sia DOUBLES (non separato per kind).
+- **All-time, continuo**: funzione di TUTTI i match CONFIRMED del giocatore, non resetta a ogni Season.
+- **Convive** con `tournament_standings`/`season_combined_standings`, non le sostituisce — due feature distinte,
+  `points_per_win`/`points_per_loss` su `Tournament` restano usati da quelle.
+
+Implementazione: **calcolato al volo**, come le altre classifiche — nessuna colonna `rating` da mantenere
+sincronizzata. `elo_ranking()` in `services/standings.py` (o `services/elo.py`) rigioca in ordine `played_at`
+(poi `id` per determinismo) tutti i `Match` CONFIRMED, partendo da rating iniziale (`INITIAL_RATING = 1000`,
+`K_FACTOR = 32`), aggiornando i rating con la formula standard. Doppio (2v2): rating squadra = media dei 2
+membri; stesso delta applicato a entrambi. Un `reject`/correzione si auto-risolve: si rigioca la sequenza,
+nessun delta salvato da disfare. Ritorna lista `{player, rating}` ordinata rating desc.
+
+*Impari:* pattern "replay ordinato di eventi + stato accumulato", stessa idea di `tournament_standings` ma
+con stato che dipende dall'ordine cronologico (non solo somma).
 
 ## API (DRF, session auth + CSRF)
 
@@ -129,9 +149,12 @@ Legenda: **[IO]** infrastruttura che scrivo e spiego · **[TU]** logica che scri
 *Impari:* FK/`related_name`, `TextChoices`, `UniqueConstraint`, validazione a livello modello, `select_related`.
 *Verifica:* creare stagione/torneo/partita dall'admin; `manage.py shell` per interrogare.
 
-### Fase 3 — Servizio classifica + test
-[TU] `services/standings.py` e `tests/test_standings.py` (casi: nessuna partita, solo pending, singolo, doppio, combinata, parità di punti).
-*Impari:* separare la logica dalle view (come `fantaApp/services/` nel FantaF1), `TestCase`, fixture in codice.
+### Fase 3 — Servizio classifica + ranking ELO + test
+[TU] `services/standings.py` e `tests/test_standings.py` (casi: nessuna partita, solo pending, singolo, doppio,
+combinata, parità di punti) **+** `elo_ranking()` e relativi test (nessuna partita, ordine cronologico conta,
+doppio con rating squadra, reject non altera il ranking finale). Vedi decisione ELO sopra.
+*Impari:* separare la logica dalle view (come `fantaApp/services/` nel FantaF1), `TestCase`, fixture in codice,
+pattern replay ordinato con stato accumulato.
 *Verifica:* `manage.py test league`.
 
 ### Fase 4 — API con DRF
