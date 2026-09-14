@@ -45,17 +45,19 @@ class Season(models.Model):
 
 
 class Tournament(models.Model):
+    """Evento BRACKET one-day occasionale. Le sfide libere di stagione NON passano
+    da qui: hanno Match.season diretto e Match.tournament=None. Niente punti W/L:
+    il ranking è ELO (services/standings.py), un bracket si vince per eliminazione."""
+
     class Kind(models.TextChoices):
-        SINGLES = "SINGLES", "Singolo"
-        DOUBLES = "DOUBLES", "Doppio"
+        REGULAR = "REGULAR", "Regular"
+        BRACKET = "BRACKET", "Bracket"
 
     name = models.CharField(max_length=100)
     season = models.ForeignKey(
         Season, on_delete=models.CASCADE, related_name="tournaments"
     )
     kind = models.CharField(max_length=10, choices=Kind.choices)
-    points_per_win = models.PositiveSmallIntegerField(default=3)
-    points_per_loss = models.PositiveSmallIntegerField(default=0)
     is_active = models.BooleanField(default=True)
 
     def __str__(self):
@@ -67,19 +69,28 @@ class Tournament(models.Model):
 
 class Match(models.Model):
     class Status(models.TextChoices):
+        IN_PROGRESS = "IN_PROGRESS", "In corso"
         PENDING = "PENDING", "In attesa"
         CONFIRMED = "CONFIRMED", "Confermato"
         REJECTED = "REJECTED", "Rifiutato"
 
+    season = models.ForeignKey(
+        Season, on_delete=models.CASCADE, related_name="matches"
+    )
     tournament = models.ForeignKey(
-        Tournament, on_delete=models.CASCADE, related_name="matches"
+        Tournament,
+        on_delete=models.CASCADE,
+        related_name="matches",
+        null=True,
+        blank=True,
+        help_text="Valorizzato solo se il match fa parte di un evento BRACKET.",
     )
     played_at = models.DateTimeField()
     score_a = models.PositiveSmallIntegerField(validators=[MinValueValidator(0)])
     score_b = models.PositiveSmallIntegerField(validators=[MinValueValidator(0)])
     rounds = models.PositiveSmallIntegerField(validators=[MinValueValidator(1)])
     status = models.CharField(
-        max_length=10, choices=Status.choices, default=Status.PENDING
+        max_length=12, choices=Status.choices, default=Status.PENDING
     )
     created_by = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, related_name="matches_created"
@@ -93,12 +104,16 @@ class Match(models.Model):
                 raise ValidationError(
                     "I punteggi non possono essere uguali. Deve esserci un vincitore."
                 )
+        if self.tournament_id and self.tournament.season_id != self.season_id:
+            raise ValidationError(
+                "Il torneo del match deve appartenere alla stessa stagione del match."
+            )
 
     class Meta:
         ordering = ["-played_at"]
 
     def __str__(self):
-        return f"{self.tournament} - {self.played_at.strftime('%Y-%m-%d %H:%M')} - A: {self.score_a} - B: {self.score_b}"
+        return f"{self.season} - {self.played_at.strftime('%Y-%m-%d %H:%M')} - A: {self.score_a} - B: {self.score_b}"
 
 
 class MatchPlayer(models.Model):
@@ -108,7 +123,7 @@ class MatchPlayer(models.Model):
 
     match = models.ForeignKey(Match, on_delete=models.CASCADE, related_name="players")
     player = models.ForeignKey(
-        User, on_delete=models.PROTECT, related_name="matches_participation"
+        User, on_delete=models.PROTECT, related_name="match_users"
     )
     side = models.CharField(choices=Side.choices, max_length=10)
     confirmed = models.BooleanField(default=False)
