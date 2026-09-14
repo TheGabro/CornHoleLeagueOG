@@ -64,13 +64,22 @@ User (AbstractUser custom, definito PRIMA della prima migrazione — regola d'or
 
 Season      name, year, is_active
 Tournament  season FK, name, kind ∈ {SINGLES, DOUBLES}, points_win=3, points_loss=0, is_active
-Match       tournament FK, played_at (date), score_a, score_b,
+Match       tournament FK, played_at (date), score_red, score_blue, rounds (≥1, obbligatorio),
             status ∈ {PENDING, CONFIRMED, REJECTED}, created_by FK, created_at, notes
-MatchPlayer match FK, user FK, side ∈ {A, B}, confirmed (bool), confirmed_at
+MatchPlayer match FK, user FK, side ∈ {RED, BLUE}, confirmed (bool), confirmed_at
             unique (match, user)
 ```
 
-Regole (in `Match.clean()` / serializer): giocatori per lato = 1 se SINGLES, 2 se DOUBLES; un utente non può stare su entrambi i lati; `score_a != score_b`; chi crea la partita deve esserne un partecipante ed è auto‑confermato; la partita passa a CONFIRMED quando tutti i `MatchPlayer` sono confermati; un `reject` la porta a REJECTED (il creatore può correggerla → tornano tutte le conferme a `False`).
+> Fase 2: i lati si chiamano **RED / BLUE** (colori delle sacche) invece di A / B — decisione di Gabriele.
+> `Match.rounds` = numero di round serviti per chiudere la partita; obbligatorio, inserito insieme al
+> punteggio. Serve per le statistiche di fine anno (round giocati, partita più rapida, ...) — vedi Backlog.
+
+Regole (in `Match.clean()` / serializer): giocatori per lato = 1 se SINGLES, 2 se DOUBLES; un utente non può stare su entrambi i lati; `score_red != score_blue`; chi crea la partita deve esserne un partecipante ed è auto‑confermato; la partita passa a CONFIRMED quando tutti i `MatchPlayer` sono confermati; un `reject` la porta a REJECTED (il creatore può correggerla → tornano tutte le conferme a `False`).
+
+### Backlog (idee da non dimenticare, fuori dall'ambito iniziale)
+
+- **Nome squadra scelto al momento della partita**: due campi opzionali `team_name_red` / `team_name_blue` su `Match` (nessun vincolo di schema: le coppie restano libere). Se col tempo le stesse coppie si ripetono, si può derivare o creare un'entità `Team` permanente a partire dallo storico. Da valutare dopo la Fase 7.
+- **Statistiche di fine stagione**: round totali giocati, partita più rapida (min `rounds`), più lunga, media round per torneo, ecc. Si calcolano da `Match.rounds` con aggregazioni (`Sum`/`Min`/`Avg`) in `services/`, stesso stile della classifica. Pagina React dedicata.
 
 Perché `points_win/points_loss` sul torneo e niente colonna "punti" sulla partita: i punti sono **derivati**, si calcolano al volo dalla regola corrente → cambiare la regola non richiede migrazione dei dati. Se in futuro la regola diventa complessa (bonus scarto, ecc.) si estende `services/standings.py`.
 
