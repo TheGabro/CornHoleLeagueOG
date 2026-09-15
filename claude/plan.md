@@ -92,22 +92,30 @@ Perché `points_win/points_loss` sul torneo e niente colonna "punti" sulla parti
 
 ### Ranking ELO (decisione 2026-09-14, aggiunta a Fase 3)
 
-Oltre alla classifica per torneo sopra, **ranking ELO globale** per giocatore: skill nel tempo, non solo W/L
-del torneo corrente. Decisioni prese (AskUserQuestion):
-- **Rating unico combinato**: stesso numero aggiornato sia da match SINGLES sia DOUBLES (non separato per kind).
+**Ranking ELO globale** per giocatore: skill nel tempo, unica fonte di classifica (decisione 2026-09-14/15,
+sostituisce del tutto l'idea iniziale di punti W/L per torneo/stagione — vedi sopra). Decisioni prese
+(AskUserQuestion):
+- **Rating unico combinato**: stesso numero aggiornato sia da match singolo sia doppio (non separato per kind).
 - **All-time, continuo**: funzione di TUTTI i match CONFIRMED del giocatore, non resetta a ogni Season.
-- **Convive** con `tournament_standings`/`season_combined_standings`, non le sostituisce — due feature distinte,
-  `points_per_win`/`points_per_loss` su `Tournament` restano usati da quelle.
+- **Nessun punteggio W/L**: `points_per_win`/`points_per_loss` rimossi da `Tournament` (migrazione 0005).
+  Un BRACKET si vince per eliminazione, non serve punteggio.
+- **Margine di vittoria**: NON pesa sul rating per ora (ELO standard, solo vinto/perso) — possibile estensione
+  futura (fattore su `K_FACTOR` legato allo scarto punti, tipo FiveThirtyEight), non implementata.
 
-Implementazione: **calcolato al volo**, come le altre classifiche — nessuna colonna `rating` da mantenere
-sincronizzata. `elo_ranking()` in `services/standings.py` (o `services/elo.py`) rigioca in ordine `played_at`
-(poi `id` per determinismo) tutti i `Match` CONFIRMED, partendo da rating iniziale (`INITIAL_RATING = 1000`,
-`K_FACTOR = 32`), aggiornando i rating con la formula standard. Doppio (2v2): rating squadra = media dei 2
-membri; stesso delta applicato a entrambi. Un `reject`/correzione si auto-risolve: si rigioca la sequenza,
-nessun delta salvato da disfare. Ritorna lista `{player, rating}` ordinata rating desc.
+Implementazione: **calcolato al volo** — nessuna colonna `rating` da mantenere sincronizzata. `elo_ranking()`
+in `league/services/standings.py` rigioca in ordine `played_at` (poi `id` per determinismo) tutti i `Match`
+CONFIRMED, partendo da rating iniziale (`INITIAL_RATING = 1000`, `K_FACTOR = 32`). Doppio (2v2): rating
+squadra = media dei 2 membri; stesso delta applicato a entrambi. Un `reject`/correzione si auto-risolve: si
+rigioca la sequenza, nessun delta salvato da disfare. Ritorna lista `{player, rating}` ordinata rating desc.
+✅ Fatto, testato (`league/tests/test_standings.py`), branch `feature/standings`.
 
-*Impari:* pattern "replay ordinato di eventi + stato accumulato", stessa idea di `tournament_standings` ma
-con stato che dipende dall'ordine cronologico (non solo somma).
+`scoring_averages()` (stessa Fase 3, stesso file): **PPR/DPR** (Points/Defensive Points Per Round, ispirato
+al Cornhole Performance Index ACL) — media punti fatti/subiti per round, per giocatore, su tutti i match
+CONFIRMED. Nessuna migrazione: derivato da `score_a`/`score_b`/`rounds` già esistenti. Vista **separata**
+da ELO, non la influenza. ✅ Fatto.
+
+*Impari:* pattern "replay ordinato di eventi + stato accumulato" (ELO) vs "accumula numeratore/denominatore,
+dividi una volta sola alla fine" (PPR/DPR) — due modi diversi di derivare statistiche dallo stesso storico.
 
 ## API (DRF, session auth + CSRF)
 
@@ -115,12 +123,12 @@ con stato che dipende dall'ordine cronologico (non solo somma).
 |---|---|---|
 | GET | `/api/me/` | utente corrente (o endpoint sessione di allauth) |
 | GET | `/api/players/` | utenti attivi, per scegliere avversari/compagni |
-| GET | `/api/seasons/`, `/api/tournaments/?season=` | sola lettura |
-| GET/POST | `/api/matches/?tournament=` | POST con `players` annidati `[{user, side}]` + punteggi |
+| GET | `/api/seasons/`, `/api/tournaments/?season=` | sola lettura (Tournament = solo eventi BRACKET) |
+| GET/POST | `/api/matches/?season=` | POST con `players` annidati `[{user, side}]` + punteggi; `tournament` opzionale |
 | GET | `/api/matches/{id}/` | dettaglio con partecipanti e stato conferme |
 | POST | `/api/matches/{id}/confirm/`, `/reject/` | custom action, solo partecipanti |
-| GET | `/api/tournaments/{id}/standings/` | classifica torneo |
-| GET | `/api/seasons/{id}/standings/` | classifica combinata ("ombra") |
+| GET | `/api/ranking/elo/` | ranking ELO globale (`elo_ranking()`) |
+| GET | `/api/ranking/scoring/` | PPR/DPR per giocatore (`scoring_averages()`) |
 
 Login: `/_allauth/browser/v1/auth/provider/redirect` (POST form → Google → callback → cookie di sessione) e `/_allauth/browser/v1/auth/session` per sapere chi è loggato. Tutto sotto lo stesso dominio → in dev Vite fa da proxy verso Django (`server.proxy` per `/api` e `/_allauth`), quindi **zero CORS** anche in sviluppo.
 
