@@ -4,20 +4,19 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('league', '0003_alter_matchplayer_side'),
+        ("league", "0003_alter_matchplayer_side"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='match',
-            old_name='score_blue',
-            new_name='score_a',
+            model_name="match",
+            old_name="score_blue",
+            new_name="score_a",
         ),
         migrations.RenameField(
-            model_name='match',
-            old_name='score_red',
-            new_name='score_b',
+            model_name="match",
+            old_name="score_red",
+            new_name="score_b",
         ),
     ]
