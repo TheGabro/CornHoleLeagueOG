@@ -4,15 +4,16 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('league', '0002_season_tournament_match_matchplayer'),
+        ("league", "0002_season_tournament_match_matchplayer"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='matchplayer',
-            name='side',
-            field=models.CharField(choices=[('Team A', 'Team A'), ('Team B', 'Team B')], max_length=10),
+            model_name="matchplayer",
+            name="side",
+            field=models.CharField(
+                choices=[("Team A", "Team A"), ("Team B", "Team B")], max_length=10
+            ),
         ),
     ]

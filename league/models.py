@@ -74,9 +74,7 @@ class Match(models.Model):
         CONFIRMED = "CONFIRMED", "Confermato"
         REJECTED = "REJECTED", "Rifiutato"
 
-    season = models.ForeignKey(
-        Season, on_delete=models.CASCADE, related_name="matches"
-    )
+    season = models.ForeignKey(Season, on_delete=models.CASCADE, related_name="matches")
     tournament = models.ForeignKey(
         Tournament,
         on_delete=models.CASCADE,

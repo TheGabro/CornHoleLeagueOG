@@ -4,15 +4,23 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('league', '0005_remove_tournament_points_per_loss_and_more'),
+        ("league", "0005_remove_tournament_points_per_loss_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='match',
-            name='status',
-            field=models.CharField(choices=[('IN_PROGRESS', 'In corso'), ('PENDING', 'In attesa'), ('CONFIRMED', 'Confermato'), ('REJECTED', 'Rifiutato')], default='PENDING', max_length=12),
+            model_name="match",
+            name="status",
+            field=models.CharField(
+                choices=[
+                    ("IN_PROGRESS", "In corso"),
+                    ("PENDING", "In attesa"),
+                    ("CONFIRMED", "Confermato"),
+                    ("REJECTED", "Rifiutato"),
+                ],
+                default="PENDING",
+                max_length=12,
+            ),
         ),
     ]

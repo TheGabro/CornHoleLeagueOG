@@ -6,39 +6,56 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('league', '0004_rename_score_blue_match_score_a_and_more'),
+        ("league", "0004_rename_score_blue_match_score_a_and_more"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='tournament',
-            name='points_per_loss',
+            model_name="tournament",
+            name="points_per_loss",
         ),
         migrations.RemoveField(
-            model_name='tournament',
-            name='points_per_win',
+            model_name="tournament",
+            name="points_per_win",
         ),
         migrations.AddField(
-            model_name='match',
-            name='season',
-            field=models.ForeignKey(default=1, on_delete=django.db.models.deletion.CASCADE, related_name='matches', to='league.season'),
+            model_name="match",
+            name="season",
+            field=models.ForeignKey(
+                default=1,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="matches",
+                to="league.season",
+            ),
             preserve_default=False,
         ),
         migrations.AlterField(
-            model_name='match',
-            name='tournament',
-            field=models.ForeignKey(blank=True, help_text='Valorizzato solo se il match fa parte di un evento BRACKET.', null=True, on_delete=django.db.models.deletion.CASCADE, related_name='matches', to='league.tournament'),
+            model_name="match",
+            name="tournament",
+            field=models.ForeignKey(
+                blank=True,
+                help_text="Valorizzato solo se il match fa parte di un evento BRACKET.",
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="matches",
+                to="league.tournament",
+            ),
         ),
         migrations.AlterField(
-            model_name='matchplayer',
-            name='player',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='match_users', to=settings.AUTH_USER_MODEL),
+            model_name="matchplayer",
+            name="player",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="match_users",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AlterField(
-            model_name='tournament',
-            name='kind',
-            field=models.CharField(choices=[('REGULAR', 'Regular'), ('BRACKET', 'Bracket')], max_length=10),
+            model_name="tournament",
+            name="kind",
+            field=models.CharField(
+                choices=[("REGULAR", "Regular"), ("BRACKET", "Bracket")], max_length=10
+            ),
         ),
     ]
