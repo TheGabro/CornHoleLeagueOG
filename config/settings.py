@@ -43,6 +43,8 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # librerie terze
+    "rest_framework",
     # app nostre
     "league",
 ]
@@ -126,6 +128,23 @@ USE_TZ = True
 STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+
+# --- Django REST Framework ---------------------------------------------------------------------
+# SessionAuthentication: riusa il cookie di sessione già creato da Django login/allauth, niente
+# token separati. Django valida il cookie automaticamente sulle richieste "safe" (GET); sulle
+# richieste che scrivono (POST/PUT/DELETE) SessionAuthentication pretende anche l'header
+# X-CSRFToken — stesso meccanismo CSRF di sempre, il frontend lo leggerà dal cookie csrftoken
+# (Fase 6, api.js). IsAuthenticated come default: ogni endpoint richiede login a meno di override
+# esplicito per-view (es. login stesso, se mai servisse un endpoint pubblico).
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
+}
 
 
 # --- Email ------------------------------------------------------------------------------------
