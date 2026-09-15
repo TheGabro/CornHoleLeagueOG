@@ -1,7 +1,7 @@
 from django.test import TestCase
 
 from league.models import Season, Match, MatchPlayer, User
-from league.services.standings import elo_ranking, INITIAL_RATING
+from league.services.standings import elo_ranking, INITIAL_RATING, scoring_averages
 
 
 class EloRankingTests(TestCase):
@@ -135,3 +135,44 @@ class EloRankingTests(TestCase):
         
         self.assertNotIn(self.carol, elo)
         self.assertNotIn(self.dave, elo)
+        
+        
+    def test_scoring_averages(self):
+        
+        match_recent = Match.objects.create(
+        season=self.season,
+        played_at="2026-01-02 10:00:00",
+        score_a=12,
+        score_b=5,
+        rounds=3,
+        status=Match.Status.CONFIRMED,
+        )
+        
+        MatchPlayer.objects.create(
+            match=match_recent, player=self.alice, side=MatchPlayer.Side.TEAM_A
+        )
+        MatchPlayer.objects.create(
+            match=match_recent, player=self.bob, side=MatchPlayer.Side.TEAM_B
+        )
+
+        match_oldest = Match.objects.create(
+            season=self.season,
+            played_at="2026-01-01 10:00:00",
+            score_a=5,
+            score_b=10,
+            rounds=2,
+            status=Match.Status.CONFIRMED,
+        )
+
+        MatchPlayer.objects.create(
+            match=match_oldest, player=self.alice, side=MatchPlayer.Side.TEAM_A
+        )
+        MatchPlayer.objects.create(
+            match=match_oldest, player=self.dave, side=MatchPlayer.Side.TEAM_B
+        )
+        
+        ppr = {row["player"]: row["ppr"] for row in scoring_averages()}
+        dpr = {row["player"]: row["dpr"] for row in scoring_averages()}
+        
+        self.assertEqual(ppr[self.alice], 17 / 5)
+        self.assertEqual(dpr[self.alice], 15 / 5)
